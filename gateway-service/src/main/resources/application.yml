@@ -17,7 +17,7 @@ spring:
         - id: Member Domain Server Welcome
           uri: http://localhost:8081/
           predicates: # 조건절
-            - Path=/member/login,/member/studentRegistration # 권한 검증을 진행하지 않는다.
+            - Path=/test/  # 권한 검증을 진행하지 않는다.
 
 eureka:
   client:
