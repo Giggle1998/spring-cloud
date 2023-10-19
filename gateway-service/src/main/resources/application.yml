@@ -9,6 +9,15 @@ spring:
     cicuitbreaker: # 서킷 브레이커 사용하여 장애 대응
       resilience4j:
         enabled: true
+    gateway:
+      httpclient:
+        connect-timeout: 3000
+        response-timeout: 3s
+      routes: # filter 설정- id: Member Domain Server
+        - id: Member Domain Server Welcome
+          uri: http://localhost:8081/
+          predicates: # 조건절
+            - Path=/member/login,/member/studentRegistration # 권한 검증을 진행하지 않는다.
 
 eureka:
   client:
