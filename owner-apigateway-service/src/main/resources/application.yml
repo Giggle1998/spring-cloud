@@ -1,0 +1,125 @@
+server:
+  port: 8001
+
+eureka:
+  client:
+    service-url:
+      fetch-registry: true
+      register-with-eureka: true
+      defaultZone: http://localhost:8761/eureka
+
+spring:
+  application:
+    name: owner-apigateway-service
+  profiles:
+    default: dev
+  config:
+    import: optional:configserver:http://127.0.0.1:8888
+
+  zipkin:
+    base-url: http://127.0.0.1:9411
+    enabled: true
+  sleuth:
+    sampler:
+      probability: 1.0
+
+  cloud:
+    config:
+      name: bootstrap
+    gateway:
+      default-filters:
+        - name: GlobalFilter
+          args:
+            baseMessage: Spring Cloud Gateway Global Filter
+            preLogger: true
+            postLogger: true
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "http://admin.just-pickup.com:8081"
+            allowedMethods:
+              - GET
+              - POST
+              - DELETE
+              - PUT
+              - OPTIONS
+              - DELETE
+              - PATCH
+            allowedHeaders: '*'
+            allow-credentials: true
+      routes:
+        - id: order-service
+          uri: lb://ORDER-SERVICE
+          predicates:
+            - Path=/order-service/**
+          filters:
+            - AuthorizationHeaderFilter
+            - RewritePath=/order-service/(?<segment>.*),/$\{segment}
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 3
+                redis-rate-limiter.burstCapacity: 3
+                key-resolver: "#{@tokenKeyResolver}"
+        - id: store-service
+          uri: lb://STORE-SERVICE
+          predicates:
+            - Path=/store-service/**
+          filters:
+            - AuthorizationHeaderFilter
+            - RewritePath=/store-service/(?<segment>.*),/$\{segment}
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 3
+                redis-rate-limiter.burstCapacity: 3
+                key-resolver: "#{@tokenKeyResolver}"
+        - id: notification-service
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/notification-service/**
+          filters:
+            - AuthorizationHeaderFilter
+            - RewritePath=/notification-service/(?<segment>.*),/$\{segment}
+
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/user-service/login
+            - Method=POST
+          filters:
+            - RewritePath=/user-service/(?<segment>.*),/$\{segment}
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/user-service/auth/reissue
+            - Method=GET
+          filters:
+            - RewritePath=/user-service/(?<segment>.*),/$\{segment}
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/user-service/logout
+            - Method=POST
+          filters:
+            - RewritePath=/user-service/(?<segment>.*),/$\{segment}
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/user-service/api/owner/store-owner
+            - Method=POST
+          filters:
+            - RewritePath=/user-service/(?<segment>.*),/$\{segment}
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/user-service/**
+          filters:
+            - AuthorizationHeaderFilter
+            - RewritePath=/user-service/(?<segment>.*),/$\{segment}
+
+
+token:
+  access-expired-time: 3600000
+  refresh-expired-time: 604800000
+  secret: $2a$10$q42lY7Y18xqrFt1qbODZIO4OMTeOxnrCe7tF3n9bazJinVE7VH5Pi
+  refresh-token-name: refresh-token
+  access-token-name: access-token
